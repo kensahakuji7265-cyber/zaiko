@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>在庫管理アプリ</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.19.1/zxing.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#222}
@@ -58,9 +58,11 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 .dot.spin{background:#EF9F27;animation:pulse 1s infinite}
 .dot.err{background:#e24b4a}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-#video-wrap{display:none;position:relative;border-radius:10px;overflow:hidden;margin-bottom:10px}
-#video-wrap video{width:100%;display:block}
-.close-cam{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:18px;cursor:pointer;line-height:30px;text-align:center}
+#video-wrap{display:none;position:relative;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#000}
+#video-wrap video{width:100%;display:block;max-height:240px;object-fit:cover}
+.cam-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:70%;height:40%;border:2px solid #1D9E75;border-radius:8px;pointer-events:none}
+.close-cam{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;line-height:32px;text-align:center;z-index:10}
+.cam-hint{text-align:center;font-size:12px;color:#888;margin-bottom:8px;display:none}
 </style>
 </head>
 <body>
@@ -79,14 +81,18 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
     <button class="tab" onclick="showTab('reg')">商品登録</button>
   </div>
 
-  <!-- スキャンタブ -->
   <div id="tab-scan">
     <div class="card">
       <div class="section-label">JANコード</div>
-      <div id="video-wrap"><video id="cam" autoplay playsinline muted></video><button class="close-cam" onclick="stopCam()">×</button></div>
+      <div id="video-wrap">
+        <video id="cam" autoplay playsinline muted></video>
+        <div class="cam-overlay"></div>
+        <button class="close-cam" onclick="stopCam()">×</button>
+      </div>
+      <p class="cam-hint" id="cam-hint">緑の枠にバーコードを合わせてください</p>
       <div class="scan-area">
         <input type="text" id="jan-input" placeholder="4901234567890" inputmode="numeric" oninput="onJanInput(this.value)" onkeydown="if(event.key==='Enter')lookupJan()"/>
-        <button class="scan-btn" onclick="startCam()">📷 カメラ</button>
+        <button class="scan-btn" id="cam-btn" onclick="startCam()">📷 カメラ</button>
       </div>
       <div class="preview" id="preview">
         <div class="pname" id="prev-name"></div>
@@ -104,17 +110,14 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
     </div>
   </div>
 
-  <!-- 在庫一覧タブ -->
   <div id="tab-stock" style="display:none">
     <div class="card"><div id="stock-list"><div class="loading">読み込み中...</div></div></div>
   </div>
 
-  <!-- 履歴タブ -->
   <div id="tab-log" style="display:none">
     <div class="card"><div id="log-list"><div class="loading">読み込み中...</div></div></div>
   </div>
 
-  <!-- 商品登録タブ -->
   <div id="tab-reg" style="display:none">
     <div class="card">
       <div class="section-label">新規商品登録</div>
@@ -141,7 +144,8 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 <script>
 const GAS_URL='https://script.google.com/macros/s/AKfycbwL93EXMH-yQel7wa5RC3mjOpUt7P9n3Jd1LI9TcTlp76teW2iGCm0TC8W7jDUpiVaahg/exec';
 let products=[];
-let camStream=null;
+let codeReader=null;
+let scanning=false;
 
 async function api(params){
   const url=GAS_URL+'?'+new URLSearchParams(params).toString();
@@ -187,6 +191,7 @@ function showTab(t){
   if(t==='stock'){loadProducts().then(renderStock);}
   if(t==='log')loadAndRenderLog();
   if(t==='reg'){loadProducts().then(renderRegList);}
+  if(t!=='scan')stopCam();
 }
 
 function toast(msg,type='in'){
@@ -247,10 +252,7 @@ function renderStock(){
     const low=p.stock<=p.safe;
     const sub=[p.category1,p.category2,p.spec].filter(Boolean).join(' / ');
     return`<div class="stock-item">
-      <div class="stock-info">
-        <div class="stock-name">${p.name}</div>
-        <div class="stock-sub">${sub||p.jan}</div>
-      </div>
+      <div class="stock-info"><div class="stock-name">${p.name}</div><div class="stock-sub">${sub||p.jan}</div></div>
       <div class="stock-num ${low?'low':'ok'}">${p.stock}<span class="stock-label"> 個${low?' ⚠️':''}</span></div>
     </div>`;
   }).join('');
@@ -285,10 +287,7 @@ function renderRegList(){
   el.innerHTML=products.map(p=>{
     const sub=[p.category1,p.category2,p.spec].filter(Boolean).join(' / ');
     return`<div class="stock-item">
-      <div class="stock-info">
-        <div class="stock-name">${p.name}</div>
-        <div class="stock-sub">${sub||p.jan}</div>
-      </div>
+      <div class="stock-info"><div class="stock-name">${p.name}</div><div class="stock-sub">${sub||p.jan}</div></div>
       <button onclick="deleteProduct('${p.jan}')" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#f5f5f5;cursor:pointer;white-space:nowrap">削除</button>
     </div>`;
   }).join('');
@@ -333,32 +332,62 @@ async function deleteProduct(jan){
   }
 }
 
-function startCam(){
-  document.getElementById('video-wrap').style.display='';
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
-    .then(stream=>{
-      camStream=stream;
-      const v=document.getElementById('cam');
-      v.srcObject=stream;v.play();
-      if(typeof Quagga!=='undefined'){
-        Quagga.init({inputStream:{type:'LiveStream',target:v,constraints:{facingMode:'environment'}},decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','upc_reader']}},err=>{
-          if(!err)Quagga.start();
-        });
-        Quagga.onDetected(r=>{
-          const code=r.codeResult.code;
+async function startCam(){
+  const wrap=document.getElementById('video-wrap');
+  const hint=document.getElementById('cam-hint');
+  const btn=document.getElementById('cam-btn');
+  wrap.style.display='';
+  hint.style.display='block';
+  btn.textContent='⏹ 停止';
+  btn.onclick=stopCam;
+
+  try{
+    // ZXingライブラリを使用
+    if(typeof ZXing!=='undefined'){
+      codeReader=new ZXing.BrowserMultiFormatReader();
+      const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+      // 背面カメラを優先
+      const backCam=devices.find(d=>d.label.toLowerCase().includes('back')||d.label.toLowerCase().includes('rear')||d.label.toLowerCase().includes('environment'));
+      const deviceId=backCam?backCam.deviceId:devices[devices.length-1]?.deviceId;
+      scanning=true;
+      await codeReader.decodeFromVideoDevice(deviceId,'cam',(result,err)=>{
+        if(result&&scanning){
+          scanning=false;
+          const code=result.getText();
           document.getElementById('jan-input').value=code;
-          stopCam();lookupJan();
+          stopCam();
+          lookupJan();
           toast('スキャン完了: '+code,'in');
-        });
-      }
-    })
-    .catch(()=>toast('カメラへのアクセスを許可してください','err'));
+        }
+      });
+    } else {
+      // フォールバック：getUserMediaのみ
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      document.getElementById('cam').srcObject=stream;
+      toast('バーコードライブラリ読み込み中...','in');
+    }
+  }catch(e){
+    toast('カメラを起動できませんでした','err');
+    stopCam();
+  }
 }
 
 function stopCam(){
-  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
-  if(typeof Quagga!=='undefined')try{Quagga.stop();}catch(e){}
+  scanning=false;
+  if(codeReader){
+    try{codeReader.reset();}catch(e){}
+    codeReader=null;
+  }
+  const v=document.getElementById('cam');
+  if(v.srcObject){
+    v.srcObject.getTracks().forEach(t=>t.stop());
+    v.srcObject=null;
+  }
   document.getElementById('video-wrap').style.display='none';
+  document.getElementById('cam-hint').style.display='none';
+  const btn=document.getElementById('cam-btn');
+  btn.textContent='📷 カメラ';
+  btn.onclick=startCam;
 }
 
 loadProducts();
