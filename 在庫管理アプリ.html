@@ -57,9 +57,12 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 .dot.spin{background:#EF9F27;animation:pulse 1s infinite}
 .dot.err{background:#e24b4a}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-#reader{width:100%;margin-bottom:10px;border-radius:10px;overflow:hidden;display:none}
-#reader video{border-radius:10px}
-.stop-btn{width:100%;padding:10px;font-size:13px;font-weight:500;border-radius:8px;border:1px solid #ddd;background:#fff0f0;color:#e24b4a;cursor:pointer;margin-bottom:10px;display:none}
+#reader{width:100%;margin-bottom:8px;border-radius:10px;overflow:hidden;display:none}
+/* html5-qrcodeのデフォルトUIを非表示 */
+#reader__scan_region{border-radius:10px;overflow:hidden}
+#reader__dashboard{display:none !important}
+.stop-btn{width:100%;padding:10px;font-size:13px;font-weight:500;border-radius:8px;border:1px solid #fcc;background:#fff0f0;color:#e24b4a;cursor:pointer;margin-bottom:10px;display:none}
+.scan-tip{font-size:12px;color:#888;text-align:center;margin-bottom:8px;display:none}
 </style>
 </head>
 <body>
@@ -82,7 +85,8 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
     <div class="card">
       <div class="section-label">JANコード</div>
       <div id="reader"></div>
-      <button class="stop-btn" id="stop-btn" onclick="stopCam()">📷 カメラを停止</button>
+      <p class="scan-tip" id="scan-tip">📦 バーコードを枠内に合わせてください</p>
+      <button class="stop-btn" id="stop-btn" onclick="stopCam()">■ カメラを停止</button>
       <div class="scan-area">
         <input type="text" id="jan-input" placeholder="4901234567890" inputmode="numeric" oninput="onJanInput(this.value)" onkeydown="if(event.key==='Enter')lookupJan()"/>
         <button class="scan-btn" id="cam-btn" onclick="startCam()">📷 カメラ</button>
@@ -327,6 +331,7 @@ async function deleteProduct(jan){
 async function startCam(){
   document.getElementById('reader').style.display='block';
   document.getElementById('stop-btn').style.display='block';
+  document.getElementById('scan-tip').style.display='block';
   document.getElementById('cam-btn').style.display='none';
 
   try{
@@ -337,21 +342,52 @@ async function startCam(){
       stopCam();
       return;
     }
-    // 背面カメラを優先
-    const backCam=devices.find(d=>d.label.toLowerCase().includes('back')||d.label.toLowerCase().includes('rear'));
+    const backCam=devices.find(d=>
+      d.label.toLowerCase().includes('back')||
+      d.label.toLowerCase().includes('rear')||
+      d.label.toLowerCase().includes('environment')
+    );
     const camId=backCam?backCam.id:devices[devices.length-1].id;
+
+    const config={
+      fps: 30,                          // スキャン頻度を最大に
+      qrbox: {width: 320, height: 180}, // 読み取りエリアを広く
+      aspectRatio: 1.7,
+      disableFlip: false,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true  // ネイティブ機能を優先使用
+      },
+      formatsToSupport: [               // JANコード対応フォーマット
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+      ]
+    };
 
     await html5QrCode.start(
       camId,
-      {fps:10, qrbox:{width:250,height:150}},
+      config,
       (code)=>{
         document.getElementById('jan-input').value=code;
         stopCam();
         lookupJan();
         toast('スキャン完了: '+code,'in');
       },
-      ()=>{}
+      ()=>{}  // エラーは無視（スキャン中は常に発生）
     );
+
+    // 高解像度カメラ設定を適用
+    const track=html5QrCode?.getRunningTrackCameraCapabilities?.()?.videoTrack?.();
+    if(track){
+      const caps=track.getCapabilities?.();
+      if(caps?.focusMode?.includes('continuous')){
+        track.applyConstraints({advanced:[{focusMode:'continuous'}]});
+      }
+    }
+
   }catch(e){
     toast('カメラを起動できませんでした','err');
     stopCam();
@@ -369,6 +405,7 @@ async function stopCam(){
   document.getElementById('reader').style.display='none';
   document.getElementById('reader').innerHTML='';
   document.getElementById('stop-btn').style.display='none';
+  document.getElementById('scan-tip').style.display='none';
   document.getElementById('cam-btn').style.display='block';
 }
 
