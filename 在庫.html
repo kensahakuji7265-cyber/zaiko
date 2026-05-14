@@ -27,10 +27,10 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 .btn-out{flex:1;padding:14px;font-size:15px;font-weight:600;border-radius:10px;border:none;cursor:pointer;background:#378ADD;color:#fff}
 .btn-in:active{opacity:.85}.btn-out:active{opacity:.85}
 .btn-in:disabled,.btn-out:disabled{opacity:.4;cursor:not-allowed}
-.preview{padding:10px 12px;background:#f5f5f5;border-radius:8px;margin-bottom:12px;display:none}
-.pname{font-weight:600;font-size:15px}
+.preview{padding:14px 16px;background:#eef6f2;border:2px solid #1D9E75;border-radius:10px;margin-bottom:12px;display:none}
+.pname{font-weight:700;font-size:17px;color:#0F6E56}
 .pinfo{color:#888;font-size:12px;margin-top:2px}
-.pstock{color:#555;font-size:13px;margin-top:4px}
+.pstock{color:#1a1a1a;font-size:14px;font-weight:600;margin-top:6px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 22px;border-radius:24px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:999}
 .toast.in{background:#1D9E75}.toast.out{background:#378ADD}.toast.err{background:#e24b4a}.toast.show{opacity:1}
 .log-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
@@ -45,12 +45,6 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 .stock-num{font-size:16px;font-weight:600;text-align:right}.stock-num.ok{color:#1D9E75}.stock-num.low{color:#e24b4a}
 .stock-label{font-size:11px;font-weight:400;color:#888}
 .empty{text-align:center;padding:28px;color:#aaa;font-size:13px}
-.reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.reg-grid>div{display:flex;flex-direction:column;gap:4px}
-.reg-grid label{font-size:12px;color:#888}
-.reg-grid input{padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none}
-.reg-grid input:focus{border-color:#4a7cf7}
-.reg-btn{width:100%;padding:12px;font-size:14px;font-weight:600;border-radius:10px;border:1px solid #ddd;cursor:pointer;background:#f5f5f5;color:#333;margin-top:6px}
 .loading{text-align:center;padding:20px;color:#aaa;font-size:13px}
 .sync-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fff;border:1px solid #e5e5e5;border-radius:10px;margin-bottom:12px;font-size:12px;color:#666}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;background:#1D9E75}
@@ -77,6 +71,32 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 .filter-row select{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#222;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23999' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 .filter-row select:focus{border-color:#4a7cf7}
 .filter-count{font-size:12px;color:#888;text-align:right;padding-top:2px}
+/* 商品一覧から選択ボタン */
+.pick-btn{width:100%;padding:10px;font-size:13px;font-weight:500;border-radius:8px;border:1px solid #c0d0f0;background:#f0f4ff;color:#2255cc;cursor:pointer;margin-bottom:12px;text-align:center}
+.pick-btn:active{opacity:.8}
+/* 商品選択モーダル */
+.picker-wrap{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:8000}
+.picker-wrap.open{display:flex}
+.picker-card{background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:16px;max-height:80vh;display:flex;flex-direction:column}
+.picker-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.picker-title{font-size:15px;font-weight:600;color:#1a1a1a}
+.picker-close{background:none;border:none;font-size:18px;color:#888;cursor:pointer;padding:4px 8px;line-height:1}
+.picker-search{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;margin-bottom:10px}
+.picker-search:focus{border-color:#4a7cf7}
+.picker-list{overflow-y:auto;flex:1}
+.picker-item{display:flex;align-items:center;padding:10px 4px;border-bottom:1px solid #f0f0f0;cursor:pointer;gap:10px}
+.picker-item:last-child{border-bottom:none}
+.picker-item:active{background:#f5f5f5}
+.picker-item-info{flex:1}
+.picker-item-name{font-size:14px;font-weight:500}
+.picker-item-sub{font-size:10px;color:#aaa;margin-top:2px}
+.picker-item-stock{font-size:14px;font-weight:600;text-align:right;white-space:nowrap}
+.picker-item-stock.ok{color:#1D9E75}.picker-item-stock.low{color:#e24b4a}
+.picker-filter-bar{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.picker-filter-row{display:flex;align-items:center;gap:8px}
+.picker-filter-row label{font-size:12px;color:#888;min-width:30px;flex-shrink:0}
+.picker-filter-row select{flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#222;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23999' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.picker-filter-row select:focus{border-color:#4a7cf7}
 </style>
 </head>
 <body>
@@ -105,7 +125,7 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
     <button class="tab active" onclick="showTab('scan')">スキャン</button>
     <button class="tab" onclick="showTab('stock')">在庫一覧</button>
     <button class="tab" onclick="showTab('log')">履歴</button>
-    <button class="tab" onclick="showTab('reg')">商品登録</button>
+    <button class="tab" onclick="showTab('reg')">登録商品</button>
   </div>
 
   <div id="tab-scan">
@@ -118,10 +138,13 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
           oninput="onJanInput(this.value)" onkeydown="if(event.key==='Enter')lookupJan()"/>
         <button class="scan-btn" id="cam-btn" onclick="startCam()">📷 カメラ</button>
       </div>
-      <div class="preview" id="preview">
-        <div class="pname" id="prev-name"></div>
-        <div class="pinfo" id="prev-info"></div>
-        <div class="pstock">現在庫: <span id="prev-stock"></span> 個</div>
+      <button class="pick-btn" onclick="openPicker()">📋 商品一覧から選択</button>
+      <!-- 選択中商品の表示エリア（常時表示、未選択時はグレー） -->
+      <div id="selected-product-box" style="margin-bottom:12px;padding:12px 14px;border-radius:10px;border:2px solid #e0e0e0;background:#fafafa">
+        <div style="font-size:11px;color:#aaa;margin-bottom:4px">選択中の商品</div>
+        <div id="selected-name" style="font-size:16px;font-weight:700;color:#bbb">未選択</div>
+        <div id="selected-sub" style="font-size:11px;color:#bbb;margin-top:3px"></div>
+        <div id="selected-stock" style="font-size:13px;font-weight:600;color:#bbb;margin-top:4px"></div>
       </div>
       <div class="qty-row">
         <label>数量</label>
@@ -160,22 +183,34 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 
   <div id="tab-reg" style="display:none">
     <div class="card">
-      <div class="section-label">新規商品登録</div>
-      <div class="reg-grid">
-        <div><label>JANコード ＊</label><input type="text" id="reg-jan" placeholder="4901234567890" inputmode="numeric"/></div>
-        <div><label>商品名 ＊</label><input type="text" id="reg-name" placeholder="商品名"/></div>
-        <div><label>項目</label><input type="text" id="reg-cat1" placeholder="例：食品"/></div>
-        <div><label>種類</label><input type="text" id="reg-cat2" placeholder="例：飲料"/></div>
-        <div><label>規格</label><input type="text" id="reg-spec" placeholder="例：500ml×24"/></div>
-        <div><label>初期在庫</label><input type="number" id="reg-init" value="0" min="0"/></div>
-        <div><label>安全在庫</label><input type="number" id="reg-safe" value="5" min="0"/></div>
-      </div>
-      <button class="reg-btn" onclick="registerProduct()">登録する</button>
-    </div>
-    <div class="card">
-      <div class="section-label">登録済み商品</div>
       <div id="reg-list"><div class="loading">読み込み中...</div></div>
     </div>
+  </div>
+</div>
+
+<!-- 商品選択モーダル -->
+<div class="picker-wrap" id="picker-wrap" onclick="if(event.target===this)closePicker()">
+  <div class="picker-card">
+    <div class="picker-header">
+      <span class="picker-title">商品を選択</span>
+      <button class="picker-close" onclick="closePicker()">✕</button>
+    </div>
+    <div class="picker-filter-bar">
+      <div class="picker-filter-row">
+        <label>項目</label>
+        <select id="picker-cat1" onchange="onPickerCat1Change()">
+          <option value="">すべて</option>
+        </select>
+      </div>
+      <div class="picker-filter-row">
+        <label>種類</label>
+        <select id="picker-cat2" onchange="renderPicker()">
+          <option value="">すべて</option>
+        </select>
+      </div>
+    </div>
+    <input type="text" class="picker-search" id="picker-search" placeholder="商品名・JANで検索..." oninput="renderPicker()"/>
+    <div class="picker-list" id="picker-list"></div>
   </div>
 </div>
 
@@ -272,22 +307,38 @@ function toast(msg,type='in'){
 
 function onJanInput(v){
   if(v.length>=8)lookupJan();
-  else document.getElementById('preview').style.display='none';
+  else setSelectedBox(null);
+}
+
+function setSelectedBox(p){
+  const box=document.getElementById('selected-product-box');
+  const nameEl=document.getElementById('selected-name');
+  const subEl=document.getElementById('selected-sub');
+  const stockEl=document.getElementById('selected-stock');
+  if(p){
+    nameEl.textContent=p.name;
+    nameEl.style.color='#0F6E56';
+    const sub=[p.category1,p.category2,p.spec].filter(Boolean).join(' / ');
+    subEl.textContent=sub ? 'JAN: '+p.jan+' / '+sub : 'JAN: '+p.jan;
+    subEl.style.color='#888';
+    stockEl.textContent='現在庫: '+p.stock+' 個';
+    stockEl.style.color='#333';
+    box.style.borderColor='#1D9E75';
+    box.style.background='#eef6f2';
+  }else{
+    nameEl.textContent='未選択';
+    nameEl.style.color='#bbb';
+    subEl.textContent='';
+    stockEl.textContent='';
+    box.style.borderColor='#e0e0e0';
+    box.style.background='#fafafa';
+  }
 }
 
 function lookupJan(){
   const jan=document.getElementById('jan-input').value.trim();
   const p=products.find(p=>p.jan===jan);
-  const pr=document.getElementById('preview');
-  if(p){
-    document.getElementById('prev-name').textContent=p.name;
-    const info=[p.category1,p.category2,p.spec].filter(Boolean).join(' / ');
-    document.getElementById('prev-info').textContent=info;
-    document.getElementById('prev-stock').textContent=p.stock;
-    pr.style.display='';
-  }else{
-    pr.style.display='none';
-  }
+  setSelectedBox(p||null);
 }
 
 async function doRecord(type){
@@ -305,7 +356,7 @@ async function doRecord(type){
       toast(data.name+' '+(type==='in'?'入庫':'出庫')+' '+qty+'個（在庫: '+data.stock+'）',type);
       document.getElementById('jan-input').value='';
       document.getElementById('qty-input').value='1';
-      document.getElementById('preview').style.display='none';
+      setSelectedBox(null);
       await loadProducts();
     }
   }catch(e){
@@ -386,7 +437,11 @@ function renderStock(){
     const low=p.stock<=p.safe;
     const sub=[p.category1,p.category2,p.spec].filter(Boolean).join(' / ');
     return`<div class="stock-item">
-      <div class="stock-info"><div class="stock-name">${p.name}</div><div class="stock-sub">${sub||p.jan}</div></div>
+      <div class="stock-info">
+        <div class="stock-name">${p.name}</div>
+        <div style="color:#aaa;font-size:10px;margin-top:2px">JAN: ${p.jan}</div>
+        ${sub?`<div style="color:#aaa;font-size:10px;margin-top:1px">${sub}</div>`:''}
+      </div>
       <div class="stock-num ${low?'low':'ok'}">${p.stock}<span class="stock-label"> 個${low?' ⚠️':''}</span></div>
     </div>`;
   }).join('');
@@ -420,50 +475,15 @@ function renderRegList(){
   if(!products.length){el.innerHTML='<div class="empty">商品がまだ登録されていません</div>';return;}
   el.innerHTML=products.map(p=>{
     const sub=[p.category1,p.category2,p.spec].filter(Boolean).join(' / ');
+    const meta=[sub,p.jan].filter(Boolean).join('　JAN: ');
     return`<div class="stock-item">
-      <div class="stock-info"><div class="stock-name">${p.name}</div><div class="stock-sub">${sub||p.jan}</div></div>
-      <button onclick="deleteProduct('${p.jan}')" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#f5f5f5;cursor:pointer;white-space:nowrap">削除</button>
+      <div class="stock-info">
+        <div class="stock-name">${p.name}</div>
+        <div style="color:#aaa;font-size:10px;margin-top:2px">JAN: ${p.jan}</div>
+        ${sub?`<div style="color:#aaa;font-size:10px;margin-top:1px">${sub}</div>`:''}
+      </div>
     </div>`;
   }).join('');
-}
-
-async function registerProduct(){
-  const jan=document.getElementById('reg-jan').value.trim();
-  const name=document.getElementById('reg-name').value.trim();
-  const category1=document.getElementById('reg-cat1').value.trim();
-  const category2=document.getElementById('reg-cat2').value.trim();
-  const spec=document.getElementById('reg-spec').value.trim();
-  const stock=document.getElementById('reg-init').value;
-  const safe=document.getElementById('reg-safe').value;
-  if(!jan||!name){toast('JANコードと商品名は必須です','err');return;}
-  setSync('loading','登録中...');
-  try{
-    const data=await api({action:'addProduct',jan,name,category1,category2,spec,stock,safe});
-    if(data.error){toast(data.error,'err');setSync('ok','スプレッドシート連携中');return;}
-    toast(name+'を登録しました','in');
-    ['reg-jan','reg-name','reg-cat1','reg-cat2','reg-spec'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('reg-init').value='0';
-    document.getElementById('reg-safe').value='5';
-    await loadProducts();
-    renderRegList();
-  }catch(e){
-    toast('通信エラーが発生しました','err');
-    setSync('err','接続エラー');
-  }
-}
-
-async function deleteProduct(jan){
-  const p=products.find(p=>p.jan===jan);
-  if(!confirm(p?.name+'を削除しますか？'))return;
-  try{
-    const data=await api({action:'deleteProduct',jan});
-    if(data.error){toast(data.error,'err');return;}
-    toast('削除しました','err');
-    await loadProducts();
-    renderRegList();
-  }catch(e){
-    toast('通信エラーが発生しました','err');
-  }
 }
 
 async function startCam(){
@@ -472,28 +492,56 @@ async function startCam(){
   document.getElementById('cam-btn').style.display='none';
   try{
     html5QrCode=new Html5Qrcode('reader');
-    const devices=await Html5Qrcode.getCameras();
-    if(!devices||devices.length===0){toast('カメラが見つかりません','err');stopCam();return;}
-    const backCam=devices.find(d=>
-      d.label.toLowerCase().includes('back')||
-      d.label.toLowerCase().includes('rear')||
-      d.label.toLowerCase().includes('environment'));
-    const camId=backCam?backCam.id:devices[devices.length-1].id;
-    await html5QrCode.start(camId,
-      {fps:30,qrbox:{width:300,height:150},aspectRatio:1.7,
-       experimentalFeatures:{useBarCodeDetectorIfSupported:true},
-       formatsToSupport:[
-         Html5QrcodeSupportedFormats.EAN_13,
-         Html5QrcodeSupportedFormats.EAN_8,
-         Html5QrcodeSupportedFormats.UPC_A,
-         Html5QrcodeSupportedFormats.UPC_E,
-         Html5QrcodeSupportedFormats.CODE_128,
-       ]},
-      (code)=>{
-        document.getElementById('jan-input').value=code;
-        stopCam();lookupJan();
-        toast('スキャン完了: '+code,'in');
-      },()=>{});
+
+    // iOSはfacingMode指定が最も確実。Android等はデバイスIDで背面カメラを選択
+    const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    const config={
+      fps:10,                          // iOSは低fps安定読み取り
+      qrbox:{width:260,height:130},    // 認識エリアを小さく絞ると精度向上
+      aspectRatio:1.7,
+      // experimentalFeatures は iOS Safari で誤動作するため除外
+      formatsToSupport:[
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+      ]
+    };
+
+    // 同一コードの誤連続読み取りを防ぐ
+    let lastCode='';
+    let lastTime=0;
+
+    const onSuccess=(code)=>{
+      const now=Date.now();
+      // 同じコードを1秒以内に再読みしない
+      if(code===lastCode && now-lastTime<1000) return;
+      lastCode=code; lastTime=now;
+      document.getElementById('jan-input').value=code;
+      stopCam(); lookupJan();
+      toast('スキャン完了: '+code,'in');
+    };
+
+    if(isIOS){
+      // iOSはfacingMode:'environment'でSafariカメラを直接起動
+      await html5QrCode.start(
+        {facingMode:'environment'},
+        config,
+        onSuccess, ()=>{}
+      );
+    } else {
+      // Android等はデバイス一覧から背面カメラを選択
+      const devices=await Html5Qrcode.getCameras();
+      if(!devices||devices.length===0){toast('カメラが見つかりません','err');stopCam();return;}
+      const backCam=devices.find(d=>
+        d.label.toLowerCase().includes('back')||
+        d.label.toLowerCase().includes('rear')||
+        d.label.toLowerCase().includes('environment'));
+      const camId=backCam?backCam.id:devices[devices.length-1].id;
+      await html5QrCode.start(camId, config, onSuccess, ()=>{});
+    }
   }catch(e){
     toast('カメラを起動できませんでした','err');stopCam();
   }
@@ -508,6 +556,95 @@ async function stopCam(){
   document.getElementById('reader').innerHTML='';
   document.getElementById('stop-btn').style.display='none';
   document.getElementById('cam-btn').style.display='block';
+}
+
+// ── 商品選択モーダル ──────────────────────────────────────────
+
+function openPicker(){
+  stopCam();
+  document.getElementById('picker-search').value='';
+  buildPickerCat1Options();
+  renderPicker();
+  document.getElementById('picker-wrap').classList.add('open');
+  setTimeout(()=>document.getElementById('picker-search').focus(),200);
+}
+
+function closePicker(){
+  document.getElementById('picker-wrap').classList.remove('open');
+}
+
+function buildPickerCat1Options(){
+  const sel=document.getElementById('picker-cat1');
+  const values=[...new Set(products.map(p=>p.category1||'').filter(Boolean))].sort();
+  sel.innerHTML='<option value="">すべて</option>';
+  values.forEach(v=>{
+    const opt=document.createElement('option');
+    opt.value=v; opt.textContent=v;
+    sel.appendChild(opt);
+  });
+  buildPickerCat2Options('');
+}
+
+function onPickerCat1Change(){
+  const cat1=document.getElementById('picker-cat1').value;
+  buildPickerCat2Options(cat1);
+  renderPicker();
+}
+
+function buildPickerCat2Options(cat1){
+  const sel=document.getElementById('picker-cat2');
+  const source=cat1 ? products.filter(p=>p.category1===cat1) : products;
+  const values=[...new Set(source.map(p=>p.category2||'').filter(Boolean))].sort();
+  sel.innerHTML='<option value="">すべて</option>';
+  values.forEach(v=>{
+    const opt=document.createElement('option');
+    opt.value=v; opt.textContent=v;
+    sel.appendChild(opt);
+  });
+}
+
+function renderPicker(){
+  const cat1=document.getElementById('picker-cat1').value;
+  const cat2=document.getElementById('picker-cat2').value;
+  const kw=document.getElementById('picker-search').value.trim().toLowerCase();
+  let list=products;
+  if(cat1) list=list.filter(p=>p.category1===cat1);
+  if(cat2) list=list.filter(p=>p.category2===cat2);
+  if(kw)   list=list.filter(p=>p.name.toLowerCase().includes(kw)||p.jan.includes(kw));
+  const el=document.getElementById('picker-list');
+  if(!list.length){
+    el.innerHTML='<div class="empty">'+(cat1||cat2||kw?'該当する商品がありません':'商品がまだ登録されていません')+'</div>';
+    return;
+  }
+  el.innerHTML=list.map(p=>{
+    const low=p.stock<=p.safe;
+    const sub=[p.category1,p.category2,p.spec].filter(Boolean).join(' / ');
+    return`<div class="picker-item" onclick="selectProduct('${p.jan}')">
+      <div class="picker-item-info">
+        <div class="picker-item-name">${p.name}</div>
+        <div class="picker-item-sub">JAN: ${p.jan}${sub?' ／ '+sub:''}</div>
+      </div>
+      <div class="picker-item-stock ${low?'low':'ok'}">${p.stock}<span style="font-size:11px;font-weight:400;color:#888"> 個${low?' ⚠️':''}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function clearSelection(){
+  document.getElementById('jan-input').value='';
+  document.getElementById('qty-input').value='1';
+  setSelectedBox(null);
+}
+
+function selectProduct(jan){
+  const p=products.find(p=>p.jan===jan);
+  closePicker();
+  document.getElementById('jan-input').value=jan;
+  document.getElementById('qty-input').value='1';
+  setSelectedBox(p||null);
+  setTimeout(()=>{
+    document.getElementById('qty-input').focus();
+    document.getElementById('qty-input').select();
+  }, 80);
 }
 </script>
 </body>
