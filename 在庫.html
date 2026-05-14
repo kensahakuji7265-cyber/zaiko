@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>在庫管理アプリ</title>
-<!-- ZXing fallback for older iOS -->
-<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<!-- Quagga2: iOS含む実績あるバーコードライブラリ -->
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#222}
@@ -162,6 +162,14 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
         </div>
         <div class="cam-status" id="cam-status">バーコードを枠内に合わせてください</div>
         <button class="stop-btn" id="stop-btn" onclick="stopCam()">■ カメラを停止</button>
+      </div>
+      <!-- iOS写真撮影フォールバック（リアルタイムが使えない場合に表示） -->
+      <div id="photo-fallback" style="display:none;margin-bottom:10px">
+        <div style="font-size:12px;color:#888;margin-bottom:6px;text-align:center">カメラボタンを押して写真でバーコードを読み取ります</div>
+        <label style="display:block;width:100%;padding:12px;font-size:14px;font-weight:600;border-radius:10px;border:1px solid #c0d0f0;background:#f0f4ff;color:#2255cc;cursor:pointer;text-align:center">
+          📸 写真を撮ってスキャン
+          <input type="file" accept="image/*" capture="environment" id="photo-input" style="display:none" onchange="scanPhotoFile(this)"/>
+        </label>
       </div>
       <div class="scan-area">
         <input type="text" id="jan-input" placeholder="4901234567890" inputmode="numeric"
@@ -523,39 +531,30 @@ let zxingReader=null;
 let lastCode='';
 let lastCodeTime=0;
 
-// 利用可能なスキャンエンジンを初期化
+// 利用可能なスキャンエンジンを判定
 async function initScanEngine(){
-  // ① ネイティブ BarcodeDetector（iOS17+, Android Chrome）
+  // ① ネイティブ BarcodeDetector（Android Chrome / iOS17.4+Safari）
   if('BarcodeDetector' in window){
     try{
-      barcodeDetector=new BarcodeDetector({
-        formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']
-      });
-      return 'native';
+      const supported = await BarcodeDetector.getSupportedFormats();
+      const hasEan = supported.includes('ean_13')||supported.includes('ean-13');
+      if(hasEan||supported.length>0){
+        barcodeDetector=new BarcodeDetector({
+          formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']
+        });
+        return 'native';
+      }
     }catch(e){}
   }
-  // ② ZXing fallback（iOS16以下、古いブラウザ）
-  if(window.ZXing){
-    try{
-      const hints=new Map();
-      const fmts=[
-        ZXing.BarcodeFormat.EAN_13,
-        ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.UPC_A,
-        ZXing.BarcodeFormat.UPC_E,
-        ZXing.BarcodeFormat.CODE_128,
-      ];
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, fmts);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      zxingReader=new ZXing.MultiFormatReader();
-      zxingReader.setHints(hints);
-      return 'zxing';
-    }catch(e){}
+  // ② Quagga2（iOS16以下など）
+  if(window.Quagga){
+    return 'quagga';
   }
   return 'none';
 }
 
 async function startCam(){
+  document.getElementById('photo-fallback').style.display='none';
   const viewer=document.getElementById('cam-viewer');
   viewer.style.display='block';
   viewer.style.marginBottom='10px';
@@ -581,13 +580,21 @@ async function startCam(){
     const engine=await initScanEngine();
     document.getElementById('cam-status').textContent='バーコードを枠内に合わせてください';
 
-    // canvasをvideoと同サイズに設定
-    const canvas=document.getElementById('cam-canvas');
-    video.addEventListener('loadedmetadata',()=>{
-      canvas.width=video.videoWidth;
-      canvas.height=video.videoHeight;
-    },{once:true});
+    if(engine==='none'){
+      // リアルタイムスキャン不可 → 写真撮影モードに切り替え
+      stopCam();
+      document.getElementById('photo-fallback').style.display='block';
+      document.getElementById('cam-btn').style.display='none';
+      return;
+    }
 
+    if(engine==='quagga'){
+      // Quagga2はvideo要素に直接アタッチ
+      startQuagga();
+      return;
+    }
+
+    // nativeエンジン（BarcodeDetector）
     startScanLoop(engine);
   }catch(e){
     const msg=e.name==='NotAllowedError'?'カメラのアクセスを許可してください':
@@ -596,6 +603,104 @@ async function startCam(){
     toast(msg,'err');
     stopCam();
   }
+}
+
+// Quagga2 でリアルタイムスキャン（iOS16以下フォールバック）
+function startQuagga(){
+  const video=document.getElementById('cam-video');
+  Quagga.init({
+    inputStream:{
+      type:'LiveStream',
+      target:video.parentElement,  // cam-viewer divにアタッチ
+      constraints:{
+        facingMode:'environment',
+        width:{ideal:1280},
+        height:{ideal:720}
+      }
+    },
+    decoder:{
+      readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader'],
+      multiple:false
+    },
+    locate:true
+  }, err=>{
+    if(err){
+      // Quaggaも失敗 → 写真撮影モード
+      stopCam();
+      document.getElementById('photo-fallback').style.display='block';
+      document.getElementById('cam-btn').style.display='none';
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(result=>{
+    const code=result.codeResult.code;
+    if(!code||!/^[0-9]{6,14}$/.test(code)) return;
+    const now=Date.now();
+    if(code===lastCode && now-lastCodeTime<2000) return;
+    lastCode=code; lastCodeTime=now;
+    document.getElementById('jan-input').value=code;
+    stopCam(); lookupJan();
+    toast('✓ スキャン完了','in');
+  });
+}
+
+// 写真ファイルからバーコードを解析（iOS写真撮影フォールバック）
+async function scanPhotoFile(input){
+  const file=input.files[0];
+  if(!file) return;
+  document.getElementById('cam-status') && (document.getElementById('cam-status').textContent='解析中...');
+
+  // BitmapまたはImageで読み込んでBarcodeDetector/Quaggaで解析
+  const url=URL.createObjectURL(file);
+
+  // まずBarcodeDetectorを試みる
+  if('BarcodeDetector' in window){
+    try{
+      const img=await createImageBitmap(await fetch(url).then(r=>r.blob()));
+      const det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+      const results=await det.detect(img);
+      URL.revokeObjectURL(url);
+      if(results.length>0){
+        const code=results[0].rawValue;
+        if(/^[0-9]{6,14}$/.test(code)){
+          document.getElementById('jan-input').value=code;
+          lookupJan();
+          toast('✓ スキャン完了','in');
+          input.value='';
+          return;
+        }
+      }
+    }catch(e){}
+  }
+
+  // Quagga2 decodeSingleで解析
+  if(window.Quagga){
+    Quagga.decodeSingle({
+      src:url,
+      numOfWorkers:0,
+      decoder:{readers:['ean_reader','ean_8_reader','upc_reader','code_128_reader']},
+      locate:true
+    }, result=>{
+      URL.revokeObjectURL(url);
+      input.value='';
+      if(result&&result.codeResult&&result.codeResult.code){
+        const code=result.codeResult.code;
+        if(/^[0-9]{6,14}$/.test(code)){
+          document.getElementById('jan-input').value=code;
+          lookupJan();
+          toast('✓ スキャン完了','in');
+          return;
+        }
+      }
+      toast('読み取れませんでした。もう一度撮影してください','err');
+    });
+    return;
+  }
+  URL.revokeObjectURL(url);
+  input.value='';
+  toast('読み取れませんでした','err');
 }
 
 function startScanLoop(engine){
@@ -655,6 +760,8 @@ function startScanLoop(engine){
 
 function stopCam(){
   if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
+  // Quagga停止
+  try{if(window.Quagga)Quagga.stop();}catch(e){}
   if(camStream){
     camStream.getTracks().forEach(t=>t.stop());
     camStream=null;
@@ -665,7 +772,10 @@ function stopCam(){
   viewer2.style.display='none';
   viewer2.style.marginBottom='0';
   document.getElementById('stop-btn').style.display='none';
-  document.getElementById('cam-btn').style.display='block';
+  // photo-fallbackが表示中でなければカメラボタンを戻す
+  if(document.getElementById('photo-fallback').style.display==='none'){
+    document.getElementById('cam-btn').style.display='block';
+  }
 }
 
 // ── 商品選択モーダル ──────────────────────────────────────────
