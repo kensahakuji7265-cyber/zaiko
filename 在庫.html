@@ -52,27 +52,26 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 .dot.err{background:#e24b4a}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 /* カメラビューア */
-.cam-viewer{position:relative;width:100%;height:220px;border-radius:10px;overflow:hidden;background:#000;margin-bottom:0;display:none;flex-shrink:0}
-.cam-viewer video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-.cam-viewer #qr-reader{position:absolute;inset:0;width:100%!important;border:none!important;}
-.cam-viewer #qr-reader__scan_region{border-radius:0!important;}
-.cam-viewer #qr-reader__scan_region img{display:none!important;}
-.cam-viewer #qr-reader__dashboard{display:none!important;}
-.cam-viewer canvas{display:none}
-/* スキャン枠オーバーレイ */
+/* カメラビューア */
+.cam-viewer{position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:0;display:none}
+/* html5-qrcodeが生成するvideo・canvasを枠いっぱいに表示 */
+#qr-reader{width:100%!important;border:none!important;background:#000}
+#qr-reader video{width:100%!important;height:auto!important;object-fit:cover;display:block!important}
+#qr-reader canvas{display:block!important;width:100%!important;height:auto!important}
+/* html5-qrcodeのデフォルトUIを隠す */
+#qr-reader__dashboard{display:none!important}
+#qr-reader__status_span{display:none!important}
+#qr-reader__scan_region img{display:none!important}
+#qr-reader__scan_region{border:none!important}
+/* スキャンライン・ステータスのオーバーレイ */
 .scan-overlay{position:absolute;inset:0;pointer-events:none;z-index:2}
-.scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:72%;height:44%;border:none}
-.scan-frame::before,.scan-frame::after,
-.scan-corner-bl,.scan-corner-br{content:'';position:absolute;width:22px;height:22px;border-color:#1D9E75;border-style:solid}
-.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px}
-.scan-frame::after{top:0;right:0;border-width:3px 3px 0 0}
-.scan-corner-bl{bottom:0;left:0;border-width:0 0 3px 3px}
-.scan-corner-br{bottom:0;right:0;border-width:0 3px 3px 0}
+/* 独自枠は非表示（html5-qrcodeのqrboxに任せる） */
+.scan-frame,.scan-corner-bl,.scan-corner-br{display:none}
 /* スキャンライン */
-.scan-line{position:absolute;left:14%;right:14%;height:2px;background:linear-gradient(90deg,transparent,#1D9E75,transparent);animation:scanmove 1.6s ease-in-out infinite}
-@keyframes scanmove{0%,100%{top:28%}50%{top:66%}}
+.scan-line{position:absolute;left:14%;right:14%;height:2px;background:linear-gradient(90deg,transparent,#1D9E75,transparent);animation:scanmove 1.8s ease-in-out infinite;top:50%}
+@keyframes scanmove{0%,100%{margin-top:-40px}50%{margin-top:40px}}
 /* スキャン状態テキスト */
-.cam-status{position:absolute;bottom:36px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:2}
+.cam-status{position:absolute;bottom:44px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:2}
 /* 停止ボタン（ビューア内下部に固定） */
 .stop-btn{position:absolute;bottom:0;left:0;right:0;padding:9px;font-size:13px;font-weight:600;border:none;border-radius:0;background:rgba(0,0,0,.55);color:#ff6b6b;cursor:pointer;z-index:3;display:none;-webkit-tap-highlight-color:transparent}
 /* ログイン画面 */
@@ -556,19 +555,19 @@ async function startCam(){
     ];
 
     // カメラ設定：iOSはfacingModeで直接指定が最も安定
+    // ビューア幅に合わせてqrboxサイズを動的計算
+    const viewerW=document.getElementById('cam-viewer').offsetWidth||320;
     const camConfig={
       fps:8,
-      qrbox:{width:260,height:130},  // 緑枠内を読む（横長）
+      qrbox:{width:Math.floor(viewerW*0.78), height:Math.floor(viewerW*0.38)},
       aspectRatio:1.7,
       formatsToSupport:formats
-      // experimentalFeaturesは除外（iOS誤動作の原因）
     };
 
     await html5QrCode.start(
       {facingMode:'environment'},
       camConfig,
       (code)=>{
-        // 同じコードを2.5秒以内に再読みしない
         const now=Date.now();
         if(code===lastCode && now-lastCodeTime<2500) return;
         lastCode=code; lastCodeTime=now;
@@ -576,7 +575,7 @@ async function startCam(){
         stopCam(); lookupJan();
         toast('✓ スキャン完了','in');
       },
-      ()=>{}  // エラーは無視（フレームごとに未検出エラーが出るため）
+      ()=>{}
     );
 
     document.getElementById('cam-status').textContent='バーコードを枠内に合わせてください';
