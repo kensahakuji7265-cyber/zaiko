@@ -55,25 +55,52 @@ h1{font-size:17px;font-weight:600;padding:12px 0 10px;color:#1a1a1a;text-align:c
 /* カメラビューア */
 .cam-viewer{position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:0;display:none}
 /* html5-qrcodeが生成するvideo・canvasを枠いっぱいに表示 */
-#qr-reader{width:100%!important;border:none!important;background:#000}
+#qr-reader{width:100%!important;border:none!important;background:#000;position:relative}
 #qr-reader video{width:100%!important;height:auto!important;object-fit:cover;display:block!important}
 #qr-reader canvas{display:block!important;width:100%!important;height:auto!important}
 /* html5-qrcodeのデフォルトUIを隠す */
 #qr-reader__dashboard{display:none!important}
 #qr-reader__status_span{display:none!important}
+/* qrboxの枠線をデフォルト（赤）から透明にして独自デザインに任せる */
+#qr-reader__scan_region{border:none!important;position:relative}
 #qr-reader__scan_region img{display:none!important}
-#qr-reader__scan_region{border:none!important}
-/* スキャンライン・ステータスのオーバーレイ */
-.scan-overlay{position:absolute;inset:0;pointer-events:none;z-index:2}
-/* 独自枠は非表示（html5-qrcodeのqrboxに任せる） */
-.scan-frame,.scan-corner-bl,.scan-corner-br{display:none}
-/* スキャンライン */
-.scan-line{position:absolute;left:14%;right:14%;height:2px;background:linear-gradient(90deg,transparent,#1D9E75,transparent);animation:scanmove 1.8s ease-in-out infinite;top:50%}
-@keyframes scanmove{0%,100%{margin-top:-40px}50%{margin-top:40px}}
+/* qrbox内に独自の緑枠を表示 */
+#qr-reader__scan_region::before{
+  content:'';position:absolute;inset:0;
+  border:2px solid rgba(29,158,117,0.6);
+  box-shadow:inset 0 0 0 2px rgba(29,158,117,0.3);
+  pointer-events:none;z-index:10
+}
+/* qrbox四隅に緑のコーナー */
+#qr-reader__scan_region::after{
+  content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(to right,#1D9E75 3px,transparent 3px) 0 0/24px 24px no-repeat,
+    linear-gradient(to bottom,#1D9E75 3px,transparent 3px) 0 0/24px 24px no-repeat,
+    linear-gradient(to left,#1D9E75 3px,transparent 3px) 100% 0/24px 24px no-repeat,
+    linear-gradient(to bottom,#1D9E75 3px,transparent 3px) 100% 0/24px 24px no-repeat,
+    linear-gradient(to right,#1D9E75 3px,transparent 3px) 0 100%/24px 24px no-repeat,
+    linear-gradient(to top,#1D9E75 3px,transparent 3px) 0 100%/24px 24px no-repeat,
+    linear-gradient(to left,#1D9E75 3px,transparent 3px) 100% 100%/24px 24px no-repeat,
+    linear-gradient(to top,#1D9E75 3px,transparent 3px) 100% 100%/24px 24px no-repeat;
+  pointer-events:none;z-index:10
+}
+/* スキャンライン：qrbox内を上下に動く */
+.scan-line{
+  position:absolute;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent 5%,#1D9E75 50%,transparent 95%);
+  animation:scanmove 1.8s ease-in-out infinite;
+  z-index:11;pointer-events:none
+}
+/* qrbox内で動くようにJS側で位置をセット */
+@keyframes scanmove{0%,100%{top:4px}50%{bottom:4px;top:auto}}
 /* スキャン状態テキスト */
-.cam-status{position:absolute;bottom:44px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:2}
+.cam-status{position:absolute;bottom:44px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:12}
 /* 停止ボタン（ビューア内下部に固定） */
-.stop-btn{position:absolute;bottom:0;left:0;right:0;padding:9px;font-size:13px;font-weight:600;border:none;border-radius:0;background:rgba(0,0,0,.55);color:#ff6b6b;cursor:pointer;z-index:3;display:none;-webkit-tap-highlight-color:transparent}
+.stop-btn{position:absolute;bottom:0;left:0;right:0;padding:9px;font-size:13px;font-weight:600;border:none;border-radius:0;background:rgba(0,0,0,.55);color:#ff6b6b;cursor:pointer;z-index:13;display:none;-webkit-tap-highlight-color:transparent}
+/* スキャンライン用オーバーレイ（qrbox位置に追従） */
+.scan-overlay{position:absolute;inset:0;pointer-events:none;z-index:2}
+.scan-frame,.scan-corner-bl,.scan-corner-br{display:none}
 /* ログイン画面 */
 .login-wrap{position:fixed;inset:0;background:#f5f5f5;display:flex;align-items:center;justify-content:center;z-index:9999}
 .login-card{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:32px 24px;width:320px;text-align:center}
@@ -554,19 +581,26 @@ async function startCam(){
       Html5QrcodeSupportedFormats.DATA_MATRIX,
     ];
 
-    // ビューア幅に合わせてqrboxサイズを計算
-    // バーコード（EAN-13）は横長・高さが必要、QRは正方形に近い
-    // → 両方対応できるよう縦を広めに確保
     const viewerW=document.getElementById('cam-viewer').offsetWidth||320;
-    const qbW=Math.floor(viewerW*0.85);  // 幅85%
-    const qbH=Math.floor(viewerW*0.55);  // 高さ55%（バーコード用に広め）
+    // バーコード（EAN-13）は横長なのでqrboxも横長に
+    // 幅は広く・高さは適度に（バーコードの高さに合わせる）
+    const qbW=Math.floor(viewerW*0.88);
+    const qbH=Math.floor(viewerW*0.45);
+    const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
     const camConfig={
-      fps:15,           // バーコードは高めのfpsが有利
+      fps:15,
       qrbox:{width:qbW, height:qbH},
-      // aspectRatioは指定しない（iOSで映像歪みが起きるため）
       formatsToSupport:formats,
+      // iOSでBarcodeDetector APIを使わない（誤動作防止）
+      // AndroidではBarcodeDetector使用可（高速・高精度）
       experimentalFeatures:{
-        useBarCodeDetectorIfSupported:false  // iOSでは無効化
+        useBarCodeDetectorIfSupported:!isIOS
+      },
+      // iOSは高解像度を要求（バーコードの細い線を正確に捉える）
+      videoConstraints:{
+        facingMode:'environment',
+        width:{ideal:isIOS?1920:1280},
+        height:{ideal:isIOS?1080:720}
       }
     };
 
@@ -586,6 +620,9 @@ async function startCam(){
 
     document.getElementById('cam-status').textContent='バーコードを枠内に合わせてください';
 
+    // スキャンラインをqrbox領域内に配置
+    positionScanLine();
+
   }catch(e){
     const msg=e.name==='NotAllowedError'?'カメラのアクセスを許可してください':
               e.name==='NotFoundError'?'カメラが見つかりません':
@@ -593,6 +630,43 @@ async function startCam(){
     toast(msg,'err');
     stopCam();
   }
+}
+
+// スキャンラインをqrboxの位置・サイズに合わせて配置
+function positionScanLine(){
+  // qrboxが描画されるまで少し待つ
+  setTimeout(()=>{
+    const scanRegion=document.getElementById('qr-reader__scan_region');
+    const scanLine=document.querySelector('.scan-line');
+    const viewer=document.getElementById('cam-viewer');
+    if(!scanRegion||!scanLine||!viewer) return;
+
+    const rr=scanRegion.getBoundingClientRect();
+    const vr=viewer.getBoundingClientRect();
+
+    // viewerからの相対位置でscan-lineを配置
+    const top=rr.top-vr.top;
+    const left=rr.left-vr.left;
+    const width=rr.width;
+    const height=rr.height;
+
+    scanLine.style.position='absolute';
+    scanLine.style.left=left+'px';
+    scanLine.style.width=width+'px';
+    scanLine.style.animation='none';
+    scanLine.style.top=top+'px';
+
+    // qrbox内を往復するアニメーションをJSで制御
+    let dir=1, pos=top+4;
+    const bottom=top+height-4;
+    if(window._scanLineTimer) clearInterval(window._scanLineTimer);
+    window._scanLineTimer=setInterval(()=>{
+      pos+=dir*2;
+      if(pos>=bottom){pos=bottom;dir=-1;}
+      if(pos<=top+4){pos=top+4;dir=1;}
+      scanLine.style.top=pos+'px';
+    },16);
+  },600);
 }
 
 async function stopCam(){
@@ -605,6 +679,7 @@ async function stopCam(){
     }catch(e){}
     html5QrCode=null;
   }
+  if(window._scanLineTimer){clearInterval(window._scanLineTimer);window._scanLineTimer=null;}
   document.getElementById('qr-reader').innerHTML='';
   const viewer=document.getElementById('cam-viewer');
   viewer.style.display='none';
